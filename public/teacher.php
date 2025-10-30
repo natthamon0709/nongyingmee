@@ -2,8 +2,8 @@
 // ===== teacher.php =====
 // หน้าครูสำหรับดูรายละเอียดงาน + ส่งงาน (เวอร์ชันสวยขึ้น)
 
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+// error_reporting(E_ALL);
+// ini_set('display_errors', '1');
 
 require_once __DIR__ . '/../src/helpers.php';       // csrf_token(), require_auth(), verify_csrf()
 require_once __DIR__ . '/../src/TaskRepository.php';// tasks_list2()
@@ -100,7 +100,7 @@ if (!$task) {
       $ok = in_array((int)($user['id'] ?? 0), array_map('intval',$r['assignees']), true);
     }
     if (!$ok && !empty($r['assignee_name'])) {
-      $nm = strtolower($user['name'] ?? '');
+      $nm = mb_strtolower($user['name'] ?? '');
       $ok = $nm !== '' && (mb_strpos(mb_strtolower($r['assignee_name']), $nm) !== false);
     }
     if ($ok) $myTasks[] = $r;
