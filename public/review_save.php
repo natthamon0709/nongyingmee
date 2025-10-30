@@ -1,5 +1,6 @@
 <?php
-// review_save.php
+// review_save.php — บันทึกผลตรวจ และถ้าอนุมัติให้อัปเดตสถานะงานด้วย (เวอร์ชันกันพังตามสคีมาจริง)
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/helpers.php';     // db(), require_auth(), verify_csrf(), redirect()
@@ -18,19 +19,31 @@ $allowed = ['waiting','approved','rework'];
 if ($submissionId <= 0 || !in_array($reviewStatus, $allowed, true)) {
   redirect('admin.php?tab=review&err=bad_input');
 }
-
 if ($score < 1 || $score > 10) {
   $score = 5; // default กลางๆ
 }
 
 $pdo = db();
+// เปิดโหมดโยน exception จะได้เห็นสาเหตุจริงหากพลาด
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// ดึง submission + task ที่เกี่ยวข้อง
+/** util: มีคอลัมน์นี้ไหม */
+$colExists = function(PDO $pdo, string $table, string $col): bool {
+  $q = $pdo->prepare("
+    SELECT 1
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?
+    LIMIT 1
+  ");
+  $q->execute([$table, $col]);
+  return (bool)$q->fetchColumn();
+};
+
+// ดึง submission + task ที่เกี่ยวข้อง (เพื่อรู้ task_id)
 $sql = "
-  SELECT s.id AS submission_id, s.task_id, s.content, s.sent_at,
-         t.id AS task_id, t.status AS task_status, t.department_id, t.title
+  SELECT s.id       AS submission_id,
+         s.task_id  AS task_id
   FROM task_submissions s
-  JOIN tasks t ON t.id = s.task_id
   WHERE s.id = ?
   LIMIT 1
 ";
@@ -42,51 +55,112 @@ if (!$row) {
   redirect('admin.php?tab=review&err=not_found');
 }
 
+$taskId = (int)$row['task_id'];
+
+// mapping สถานะของตาราง tasks ให้สัมพันธ์กับผลตรวจ
+$taskUpdatesByReview = [
+  'waiting'  => ['review_status' => 'waiting',  'status' => 'in_progress', 'approved_at' => null],
+  'rework'   => ['review_status' => 'rework',   'status' => 'in_progress', 'approved_at' => null],
+  'approved' => ['review_status' => 'approved', 'status' => 'done',        'approved_at' => 'NOW()'],
+];
+
+// เตรียมฟิลด์ที่จะอัปเดตแบบ dynamic ให้ “ตรงกับคอลัมน์ที่มีอยู่จริง”
+$subTable   = 'task_submissions';
+$taskTable  = 'tasks';
+
+$subSet   = [];
+$subParam = [];
+
+// ฝั่ง task_submissions
+if ($colExists($pdo, $subTable, 'review_status')) {
+  $subSet[] = 'review_status = ?';
+  $subParam[] = $reviewStatus;
+}
+if ($colExists($pdo, $subTable, 'score')) {
+  $subSet[] = 'score = ?';
+  $subParam[] = $score;
+}
+if ($colExists($pdo, $subTable, 'reviewer_comment')) {
+  $subSet[] = 'reviewer_comment = ?';
+  $subParam[] = $comment;
+}
+if ($colExists($pdo, $subTable, 'reviewer_id')) {
+  $subSet[] = 'reviewer_id = ?';
+  $subParam[] = (int)$user['id'];
+}
+// reviewed_at ถ้ามีให้ใช้ NOW()
+if ($colExists($pdo, $subTable, 'reviewed_at')) {
+  $subSet[] = 'reviewed_at = NOW()';
+}
+
+// กันกรณีไม่มีคอลัมน์ใดๆ ให้แก้ (จะถือว่าระบบยังไม่รองรับรีวิว)
+if (empty($subSet)) {
+  $_SESSION['flash_error'] = 'ไม่พบคอลัมน์สำหรับบันทึกผลตรวจในตาราง task_submissions';
+  redirect('admin.php?tab=review&err=no_sub_cols');
+}
+
 try {
   $pdo->beginTransaction();
 
-  // 1) อัปเดตผลการรีวิวของ submission ล่าสุด
-  $upd1 = $pdo->prepare("
-    UPDATE task_submissions
-    SET review_status = ?, score = ?, reviewer_comment = ?, reviewed_by = ?, reviewed_at = NOW()
-    WHERE id = ?
-  ");
-  $upd1->execute([$reviewStatus, $score, $comment, (string)($user['name'] ?? 'reviewer'), $submissionId]);
+  // 1) อัปเดตผลตรวจใน task_submissions
+  $sqlSub = "UPDATE {$subTable} SET " . implode(', ', $subSet) . " WHERE id = ? LIMIT 1";
+  $subParam[] = $submissionId;
+  $upd1 = $pdo->prepare($sqlSub);
+  $upd1->execute($subParam);
 
-  // 2) อัปเดตสถานะรีวิวที่ตัวงาน (ให้รู้สถานะล่าสุดของการตรวจ)
-  $upd2 = $pdo->prepare("
-    UPDATE tasks
-    SET review_status = ?, last_review_submission_id = ?, last_reviewed_at = NOW()
-    WHERE id = ?
-  ");
-  $upd2->execute([$reviewStatus, $submissionId, (int)$row['task_id']]);
+  // 2) สะท้อนสถานะไปที่ตาราง tasks (ตามคอลัมน์ที่มี)
+  $m = $taskUpdatesByReview[$reviewStatus];
 
-  // 3) ถ้าอนุมัติแล้ว -> ปิดงานให้เสร็จสิ้น (done) + ตั้ง flag อนุมัติ
-  // echo "Review status: " . $reviewStatus . "\n";exit;
-  if ($reviewStatus === 'approved') {
-    // echo "Approving task ID " . (int)$row['task_id'] . "\n";exit;
-    $upd3 = $pdo->prepare("
-      UPDATE tasks
-      SET status = 'done',
-          approved = 1,
-          approved_at = NOW()
-      WHERE id = ?
-    ");
-    $upd3->execute([(int)$row['task_id']]);
+  $taskSet   = [];
+  $taskParam = [];
+
+  if ($colExists($pdo, $taskTable, 'review_status')) {
+    $taskSet[]   = 'review_status = ?';
+    $taskParam[] = $m['review_status'];
   }
-  // (ทางเลือก) ถ้าถูกตีกลับ rework แล้วอยากดันกลับเป็นกำลังทำ:
-  // else if ($reviewStatus === 'rework') {
-  //   $upd3b = $pdo->prepare("UPDATE tasks SET status = 'in_progress' WHERE id = ?");
-  //   $upd3b->execute([(int)$row['task_id']]);
-  // }
+  // คอลัมน์สถานะหลักของงาน: ปกติใช้ชื่อ status (หากของบิวใช้ชื่ออื่น เช่น state ให้สร้างคอลัมน์นั้นแทน)
+  if ($colExists($pdo, $taskTable, 'status')) {
+    $taskSet[]   = 'status = ?';
+    $taskParam[] = $m['status'];
+  }
+  // approved_at
+  if ($colExists($pdo, $taskTable, 'approved_at')) {
+    if ($m['approved_at'] === 'NOW()') {
+      $taskSet[] = 'approved_at = NOW()';
+    } else {
+      $taskSet[] = 'approved_at = NULL';
+    }
+  }
+  // reviewer_id
+  if ($colExists($pdo, $taskTable, 'reviewer_id')) {
+    $taskSet[]   = 'reviewer_id = ?';
+    $taskParam[] = (int)$user['id'];
+  }
+  // last_submission_id
+  if ($colExists($pdo, $taskTable, 'last_submission_id')) {
+    $taskSet[]   = 'last_submission_id = ?';
+    $taskParam[] = $submissionId;
+  }
+  // updated_at
+  if ($colExists($pdo, $taskTable, 'updated_at')) {
+    $taskSet[] = 'updated_at = NOW()';
+  }
+
+  if (!empty($taskSet)) {
+    $sqlTask = "UPDATE {$taskTable} SET " . implode(', ', $taskSet) . " WHERE id = ? LIMIT 1";
+    $taskParam[] = $taskId;
+    $upd2 = $pdo->prepare($sqlTask);
+    $upd2->execute($taskParam);
+  }
+  // ถ้าไม่มีคอลัมน์ใน tasks ให้แก้เลย ก็ไม่เป็นไร — ถือว่าอัปเดตเฉพาะผลตรวจ
 
   $pdo->commit();
 
-  // พากลับหน้า review พร้อมแจ้งสำเร็จ
-  redirect('admin.php?tab=review&ok=1');
-
+  $_SESSION['flash_success'] = 'บันทึกผลตรวจเรียบร้อย';
+  redirect('admin.php?tab=review');
 } catch (Throwable $e) {
   if ($pdo->inTransaction()) $pdo->rollBack();
-  // log_error($e); // ถ้ามีตัวช่วย
-  redirect('admin.php?tab=review&err=exception');
+  // error_log($e->getMessage());
+  $_SESSION['flash_error'] = 'บันทึกผลตรวจไม่สำเร็จ: ' . $e->getMessage();
+  redirect('admin.php?tab=review&err=tx_failed');
 }
