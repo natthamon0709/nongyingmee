@@ -33,3 +33,18 @@ function user_delete(int $id): bool {
   $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
   return $stmt->execute([$id]);
 }
+
+function user_find(int $id): ?array {
+        $pdo = db();
+        $sql = "
+            SELECT 
+                u.*
+            FROM users u
+            WHERE u.id = ?
+            LIMIT 1
+        ";
+        $st = $pdo->prepare($sql);
+        $st->execute([$id]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }

@@ -221,132 +221,167 @@ function tabClass($current, $target) {
 
     <?php elseif ($tab === 'users'): ?>
 
-        <!-- ========== USERS TAB ========== -->
-        <?php
-            $positions = settings_list('position');
-            $statuses  = settings_list('status');
-            $users     = user_list();
-        ?>
+<?php
+    require_once __DIR__ . '/../src/SettingsRepository.php';
+    require_once __DIR__ . '/../src/UserRepository.php';
 
-        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-            <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none">
-            <path d="M16 14a4 4 0 10-8 0v1h8v-1Z" stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-            เพิ่มผู้ใช้
-        </h2>
+    $positions = settings_list('position');
+    $statuses  = settings_list('status');
+    $users     = user_list();
 
-        <?php if (!empty($_SESSION['flash_success']) || !empty($_SESSION['flash_error'])): ?>
-            <div class="mb-3">
-            <?php if (!empty($_SESSION['flash_success'])): ?>
-                <div class="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 px-3 py-2 text-sm">
-                <?= htmlspecialchars($_SESSION['flash_success']); unset($_SESSION['flash_success']); ?>
-                </div>
-            <?php endif; ?>
-            <?php if (!empty($_SESSION['flash_error'])): ?>
-                <div class="mt-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-2 text-sm">
-                <?= htmlspecialchars($_SESSION['flash_error']); unset($_SESSION['flash_error']); ?>
-                </div>
-            <?php endif; ?>
-            </div>
-        <?php endif; ?>
+    // ตรวจว่าเป็นโหมด "แก้ไข"
+    $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    $editUser = $editId ? user_find($editId) : null;
+?>
 
-        <!-- ฟอร์มเพิ่ม -->
-        <form action="user_create.php" method="post" class="grid md:grid-cols-2 gap-4 bg-white/80 border border-blue-100 rounded-2xl p-4 shadow-sm">
+<h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+  <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none">
+    <path d="M16 14a4 4 0 10-8 0v1h8v-1Z" stroke="currentColor" stroke-width="1.5"/>
+    <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
+  </svg>
+  <?= $editUser ? 'แก้ไขข้อมูลผู้ใช้' : 'เพิ่มผู้ใช้ใหม่' ?>
+</h2>
+
+<!-- ฟอร์มเพิ่ม/แก้ไข -->
+<form action="<?= $editUser ? 'user_update.php' : 'user_create.php' ?>" method="post"
+      class="grid md:grid-cols-2 gap-4 bg-white/80 border border-blue-100 rounded-2xl p-4 shadow-sm">
+
+  <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
+  <?php if ($editUser): ?>
+    <input type="hidden" name="id" value="<?= (int)$editUser['id'] ?>">
+  <?php endif; ?>
+
+  <div>
+    <label class="block text-sm text-slate-700 mb-1">ชื่อ-นามสกุล</label>
+    <input name="name" required
+           value="<?= htmlspecialchars($editUser['name'] ?? '') ?>"
+           class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300">
+  </div>
+
+  <div>
+    <label class="block text-sm text-slate-700 mb-1">อีเมล</label>
+    <input type="email" name="email"
+           value="<?= htmlspecialchars($editUser['email'] ?? '') ?>"
+           class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300">
+  </div>
+
+  <div>
+    <label class="block text-sm text-slate-700 mb-1">ตำแหน่ง</label>
+    <select name="position_id" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
+      <option value="">— เลือกตำแหน่ง —</option>
+      <?php foreach($positions as $p): ?>
+        <option value="<?= (int)$p['id'] ?>"
+          <?= ($editUser && $editUser['position_id'] == $p['id']) ? 'selected' : '' ?>>
+          <?= htmlspecialchars($p['name']) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
+  </div>
+
+  <div>
+    <label class="block text-sm text-slate-700 mb-1">สถานะ</label>
+    <select name="status_id" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
+      <option value="">— เลือกสถานะ —</option>
+      <?php foreach($statuses as $s): ?>
+        <option value="<?= (int)$s['id'] ?>"
+          <?= ($editUser && $editUser['status_id'] == $s['id']) ? 'selected' : '' ?>>
+          <?= htmlspecialchars($s['name']) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
+  </div>
+
+  <div>
+  <label class="block text-sm font-medium text-slate-700 mb-1">รหัสผ่าน</label>
+  <div style="position:relative;">
+    <input 
+      type="password"
+      name="password"
+      value="<?= htmlspecialchars($user['password'] ?? '') ?>"
+      class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800"
+      id="passwordField"
+    >
+    <button type="button" 
+      onclick="togglePassword()" 
+      style="position:absolute; right:12px; top:8px; font-size:14px; color:#64748b;">
+      👁
+    </button>
+  </div>
+</div>
+
+  <div>
+    <label class="block text-sm text-slate-700 mb-1">คะแนนประเมิน (ดาว)</label>
+    <select name="rating" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
+      <?php for($i=0;$i<=5;$i++): ?>
+        <option value="<?= $i ?>" <?= ($editUser && $editUser['rating'] == $i) ? 'selected' : '' ?>>
+          <?= $i ? str_repeat('⭐', $i) : '—' ?>
+        </option>
+      <?php endfor; ?>
+    </select>
+  </div>
+
+  <div class="md:col-span-2">
+    <label class="block text-sm text-slate-700 mb-1">บทบาท</label>
+    <select name="role" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
+      <option value="teacher" <?= ($editUser && $editUser['role']==='teacher') ? 'selected':'' ?>>ครู</option>
+      <option value="reporter" <?= ($editUser && $editUser['role']==='reporter') ? 'selected':'' ?>>แจ้งงาน</option>
+      <option value="admin" <?= ($editUser && $editUser['role']==='admin') ? 'selected':'' ?>>ผู้ดูแลระบบ</option>
+    </select>
+  </div>
+
+  <div class="md:col-span-2 flex gap-2">
+    <button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-medium">
+      <?= $editUser ? '💾 บันทึกการแก้ไข' : '➕ เพิ่มผู้ใช้' ?>
+    </button>
+    <?php if ($editUser): ?>
+      <a href="admin.php?tab=users" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800">
+        ยกเลิก
+      </a>
+    <?php endif; ?>
+  </div>
+</form>
+
+<!-- ตารางรายชื่อ -->
+<div class="mt-6 rounded-2xl border border-blue-100 bg-white/80 p-4 shadow-sm overflow-x-auto">
+  <h3 class="font-semibold text-blue-800 mb-3">รายชื่อผู้ใช้ทั้งหมด</h3>
+  <table class="min-w-full text-sm border-collapse">
+    <thead class="bg-blue-50">
+      <tr class="text-left">
+        <th class="px-3 py-2">ชื่อ-นามสกุล</th>
+        <th class="px-3 py-2">อีเมล</th>
+        <th class="px-3 py-2">ตำแหน่ง</th>
+        <th class="px-3 py-2">สถานะ</th>
+        <th class="px-3 py-2">คะแนน</th>
+        <th class="px-3 py-2">จัดการ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($users as $u): ?>
+      <tr class="border-t hover:bg-blue-50">
+        <td class="px-3 py-2"><?= htmlspecialchars($u['name']) ?></td>
+        <td class="px-3 py-2"><?= htmlspecialchars($u['email'] ?? '-') ?></td>
+        <td class="px-3 py-2"><?= htmlspecialchars($u['position'] ?? '-') ?></td>
+        <td class="px-3 py-2"><?= htmlspecialchars($u['status'] ?? '-') ?></td>
+        <td class="px-3 py-2"><?= str_repeat('⭐', (int)$u['rating']) ?></td>
+        <td class="px-3 py-2">
+          <a href="admin.php?tab=users&id=<?= (int)$u['id'] ?>" class="text-blue-600 hover:text-blue-800 mr-2" title="แก้ไข">✎</a>
+          <form action="user_delete.php" method="post" class="inline" onsubmit="return confirm('ลบผู้ใช้นี้หรือไม่?')">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
-            <div>
-            <label class="block text-sm text-slate-700 mb-1">ชื่อ-นามสกุล</label>
-            <input name="name" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300">
-            </div>
-            <div>
-            <label class="block text-sm text-slate-700 mb-1">อีเมล</label>
-            <input type="email" name="email" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300">
-            </div>
-            <div>
-            <label class="block text-sm text-slate-700 mb-1">ตำแหน่ง</label>
-            <select name="position_id" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
-                <option value="">— เลือกตำแหน่ง —</option>
-                <?php foreach($positions as $p): ?>
-                <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars($p['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            </div>
-            <div>
-            <label class="block text-sm text-slate-700 mb-1">สถานะ</label>
-            <select name="status_id" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
-                <option value="">— เลือกสถานะ —</option>
-                <?php foreach($statuses as $s): ?>
-                <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars($s['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            </div>
-            <div>
-            <label class="block text-sm text-slate-700 mb-1">รหัสผ่านเริ่มต้น</label>
-            <input type="text" name="password" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300">
-            </div>
-            <div>
-            <label class="block text-sm text-slate-700 mb-1">คะแนนประเมิน (ดาว)</label>
-            <select name="rating" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
-                <?php for($i=0;$i<=5;$i++): ?>
-                <option value="<?= $i ?>"><?= $i ? str_repeat('⭐', $i) : '—' ?></option>
-                <?php endfor; ?>
-            </select>
-            </div>
-            <div class="md:col-span-2">
-            <label class="block text-sm text-slate-700 mb-1">บทบาท</label>
-            <select name="role" class="w-full rounded-xl border border-slate-300 px-3 py-2.5">
-                <option value="teacher">ครู</option>
-                <option value="reporter">แจ้งงาน</option>
-                <option value="admin">ผู้ดูแลระบบ</option>
-            </select>
-            </div>
-            <div class="md:col-span-2">
-            <button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-medium">บันทึกผู้ใช้</button>
-            </div>
-        </form>
-
-        <!-- ตาราง -->
-        <div class="mt-6 rounded-2xl border border-blue-100 bg-white/80 p-4 shadow-sm overflow-x-auto">
-            <h3 class="font-semibold text-blue-800 mb-3">รายชื่อผู้ใช้ทั้งหมด</h3>
-            <table class="min-w-full text-sm border-collapse">
-            <thead class="bg-blue-50">
-                <tr class="text-left">
-                <th class="px-3 py-2">ชื่อ-นามสกุล</th>
-                <th class="px-3 py-2">อีเมล</th>
-                <th class="px-3 py-2">ตำแหน่ง</th>
-                <th class="px-3 py-2">สถานะ</th>
-                <th class="px-3 py-2">คะแนน</th>
-                <th class="px-3 py-2">จัดการ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($users as $u): ?>
-                <tr class="border-t hover:bg-blue-50">
-                    <td class="px-3 py-2"><?= htmlspecialchars($u['name']) ?></td>
-                    <td class="px-3 py-2"><?= htmlspecialchars($u['email'] ?? '-') ?></td>
-                    <td class="px-3 py-2"><?= htmlspecialchars($u['position'] ?? '-') ?></td>
-                    <td class="px-3 py-2"><?= htmlspecialchars($u['status'] ?? '-') ?></td>
-                    <td class="px-3 py-2"><?= str_repeat('⭐', (int)$u['rating']) ?></td>
-                    <td class="px-3 py-2">
-                    <a href="user_edit.php?id=<?= (int)$u['id'] ?>" class="text-blue-600 hover:text-blue-800 mr-2" title="แก้ไข">✎</a>
-                    <form action="user_delete.php" method="post" class="inline" onsubmit="return confirm('ลบผู้ใช้นี้หรือไม่?')">
-                        <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
-                        <input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
-                        <button class="text-rose-600 hover:text-rose-700" title="ลบ">🗑</button>
-                    </form>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                <?php if (empty($users)): ?>
-                <tr class="border-t">
-                    <td class="px-3 py-4 text-slate-500 italic" colspan="6">ยังไม่มีผู้ใช้ในระบบ</td>
-                </tr>
-                <?php endif; ?>
-            </tbody>
-            </table>
-        </div>
-
-    <?php elseif ($tab === 'review'): ?>
+            <input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
+            <button class="text-rose-600 hover:text-rose-700" title="ลบ">🗑</button>
+          </form>
+        </td>
+      </tr>
+      <?php endforeach; ?>
+      <?php if (empty($users)): ?>
+      <tr class="border-t">
+        <td class="px-3 py-4 text-slate-500 italic" colspan="6">ยังไม่มีผู้ใช้ในระบบ</td>
+      </tr>
+      <?php endif; ?>
+    </tbody>
+  </table>
+</div>
+<?php elseif ($tab === 'review'): ?>
         <?php
         require_once __DIR__ . '/../src/TaskRepository.php';
         require_once __DIR__ . '/../src/SettingsRepository.php';
@@ -929,4 +964,10 @@ function tabClass($current, $target) {
         </div>
 </div>
 
+<script>
+function togglePassword(){
+  const input = document.getElementById('passwordField');
+  input.type = (input.type === 'password') ? 'text' : 'password';
+}
+</script>
 <?php require_once __DIR__ . '/../templates/footer.php'; ?>
