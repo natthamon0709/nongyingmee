@@ -26,6 +26,52 @@ function col_exists(PDO $pdo, string $t, string $c): bool {
   return (bool)$q->fetchColumn();
 }
 
+// ---------- Helpers: ถอดไฟล์แนบ + เรนเดอร์ชิป (แบบเดียวกับ All/Review) ----------
+$decodeAttachments = function($raw) {
+  if ($raw === null) return [];
+
+  // ถ้าเป็น array อยู่แล้ว → ส่งกลับทันที
+  if (is_array($raw)) return $raw;
+
+  // ถ้าเป็น object → แปลงเป็น array
+  if (is_object($raw)) return (array)$raw;
+
+  // ปกติคาดหวังเป็น string
+  $raw = (string)$raw;
+  if ($raw === '') return [];
+
+  // ลอง parse JSON string
+  $data = json_decode($raw, true);
+  if (json_last_error() === JSON_ERROR_NONE) {
+    if (is_string($data)) return [$data];
+    if (is_array($data))  return $data;
+  }
+
+  // ไม่ใช่ JSON → อาจเป็น URL เดี่ยวหรือหลายบรรทัด
+  if (filter_var($raw, FILTER_VALIDATE_URL)) return [$raw];
+  $parts = preg_split("/[\r\n,]+/", $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+  return array_values(array_filter($parts, fn($u) => filter_var($u, FILTER_VALIDATE_URL)));
+};
+
+
+$renderFileChip = function($f) {
+  if (is_string($f)) {
+    $url = $f;
+    $label = basename(parse_url($url, PHP_URL_PATH)) ?: 'เปิดไฟล์';
+  } else {
+    $url   = $f['url'] ?? ($f['path'] ?? '');
+    $label = $f['name'] ?? ($f['original_name'] ?? basename((string)$url));
+  }
+  if (!$url) return '';
+  $safeUrl   = htmlspecialchars($url, ENT_QUOTES);
+  $safeLabel = htmlspecialchars($label ?: 'เปิดไฟล์', ENT_QUOTES);
+  return '<a href="'.$safeUrl.'" target="_blank" rel="noopener"
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm hover:bg-slate-50
+                   border-slate-200 text-slate-700">
+            📎 <span class="truncate max-w-[18ch]">'.$safeLabel.'</span>
+          </a>';
+};
+
 // ---------- รับพารามิเตอร์ ----------
 $taskId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -195,6 +241,9 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
       $created = !empty($t['created_at']) ? date('j F Y', strtotime($t['created_at'])) : '-';
       $due     = !empty($t['due_date'])   ? date('j F Y', strtotime($t['due_date']))   : '-';
       $isCurrent = $task && (int)$task['id'] === (int)$t['id'];
+
+      // NEW: ถอดไฟล์แนบของงานให้เป็นลิสต์ลิงก์ (ทนทุกฟอร์แมต)
+      $taskFiles = $decodeAttachments($t['attachments'] ?? null);
     ?>
     <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden mb-6 soft-card">
       <!-- หัวการ์ด -->
@@ -217,16 +266,12 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
           </div>
         </div>
 
-        <?php if (!empty($t['attachments'])): ?>
+        <!-- NEW: เอกสาร/ไฟล์แนบของงาน (แสดงเป็นชิปลิงก์แบบ All/Review) -->
+        <?php if (!empty($taskFiles)): ?>
           <div class="mt-4">
-            <div class="text-sm text-slate-700 mb-2">ไฟล์แนบจากส่วนกลาง</div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              <?php foreach ($t['attachments'] as $path): ?>
-                <a href="<?= htmlspecialchars($path) ?>" target="_blank" rel="noopener" class="group rounded-xl border br-dash p-2 hover:border-slate-300 transition">
-                  <img src="<?= htmlspecialchars($path) ?>" alt="แนบ" class="w-full aspect-[4/3] object-cover rounded-lg border bg-slate-50 group-hover:shadow" />
-                  <div class="mt-2 text-xs text-slate-500 truncate"><?= htmlspecialchars(basename($path)) ?></div>
-                </a>
-              <?php endforeach; ?>
+            <div class="text-sm text-slate-700 mb-2">เอกสาร/ไฟล์แนบของงาน</div>
+            <div class="flex flex-wrap gap-2">
+              <?php foreach ($taskFiles as $f) echo $renderFileChip($f); ?>
             </div>
           </div>
         <?php endif; ?>
@@ -289,11 +334,11 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
                 <input type="url" name="link_url" value="<?= isset($latest['link_url']) ? htmlspecialchars($latest['link_url']) : '' ?>" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300" placeholder="https://..." />
                 <div class="text-xs text-slate-500 mt-1">หากแนบลิงก์แล้วอาจไม่ต้องอัปโหลดไฟล์ซ้ำ</div>
               </div>
-              <div>
+              <!-- <div>
                 <label class="block text-sm text-slate-700 mb-1">แนบไฟล์/รูปภาพ (ถ้าต้องการ)</label>
                 <input type="file" name="files[]" multiple class="w-full rounded-xl border border-slate-300 px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-300" />
                 <div class="text-xs text-slate-500 mt-1">รองรับหลายไฟล์ (jpg, png, pdf ฯลฯ)</div>
-              </div>
+              </div> -->
             </div>
 
             <div class="text-sm text-slate-600">
