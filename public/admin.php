@@ -289,7 +289,7 @@ function tabClass($current, $target) {
       <input 
         type="password"
         name="password"
-        value=""  <!-- อย่า prefill -->
+        value=""
         class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800"
         id="passwordField"
       >
