@@ -100,16 +100,8 @@ if (!$task) {
       $ok = in_array((int)($user['id'] ?? 0), array_map('intval',$r['assignees']), true);
     }
     if (!$ok && !empty($r['assignee_name'])) {
-     if (!function_exists('mb_strtolower')) {
-        function mb_strtolower($string, $encoding = null) {
-          return strtolower($string);
-        }
-      }
-      if (!function_exists('mb_strpos')) {
-        function mb_strpos($haystack, $needle, $offset = 0, $encoding = null) {
-          return strpos($haystack, $needle, $offset);
-        }
-      }
+      $nm = mb_strtolower($user['name'] ?? '');
+      $ok = $nm !== '' && (mb_strpos(mb_strtolower($r['assignee_name']), $nm) !== false);
     }
     if ($ok) $myTasks[] = $r;
   }
