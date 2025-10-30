@@ -221,6 +221,7 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
       <div class="text-slate-700 text-sm">หน้าครู • จัดส่งงานพร้อมแนบลิงก์หรือไฟล์</div>
     </div>
   </div>
+  
 
   <?php if ($flashOk): ?>
     <div class="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 soft-card"><?= htmlspecialchars($flashOk) ?></div>
@@ -322,7 +323,13 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
           <form method="post" action="teacher.php?id=<?= (int)$t['id'] ?>" enctype="multipart/form-data" class="space-y-4">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
             <input type="hidden" name="task_id" value="<?= (int)$t['id'] ?>">
-
+            <a href="teacher.php"
+              class="inline-flex items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium shadow-sm transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 11H7.83l4.88-4.88a1 1 0 10-1.42-1.42l-6.59 6.59a1 1 0 000 1.42l6.59 6.59a1 1 0 101.42-1.42L7.83 13H19a1 1 0 100-2z"/>
+              </svg>
+              ย้อนกลับ
+            </a>
             <div>
               <label class="block text-sm text-slate-700 mb-1">คำอธิบายรายละเอียดงาน</label>
               <textarea name="content" rows="3" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300" placeholder="อธิบายรายละเอียดการส่งงาน..."><?= isset($latest['content']) ? htmlspecialchars($latest['content']) : '' ?></textarea>
@@ -334,11 +341,6 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
                 <input type="url" name="link_url" value="<?= isset($latest['link_url']) ? htmlspecialchars($latest['link_url']) : '' ?>" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300" placeholder="https://..." />
                 <div class="text-xs text-slate-500 mt-1">หากแนบลิงก์แล้วอาจไม่ต้องอัปโหลดไฟล์ซ้ำ</div>
               </div>
-              <!-- <div>
-                <label class="block text-sm text-slate-700 mb-1">แนบไฟล์/รูปภาพ (ถ้าต้องการ)</label>
-                <input type="file" name="files[]" multiple class="w-full rounded-xl border border-slate-300 px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-300" />
-                <div class="text-xs text-slate-500 mt-1">รองรับหลายไฟล์ (jpg, png, pdf ฯลฯ)</div>
-              </div> -->
             </div>
 
             <div class="text-sm text-slate-600">
