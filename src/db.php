@@ -7,11 +7,11 @@ static $pdo;
 if ($pdo) return $pdo;
 
 
-$host = $_ENV['DB_HOST'] ?? 'lolyz0ok3stvj6f0.cbetxkdyhwsb.us-east-1.rds.amazonaws.com';
+$host = $_ENV['DB_HOST'] ?? '	izm96dhhnwr2ieg0.cbetxkdyhwsb.us-east-1.rds.amazonaws.com';
 $port = (int)($_ENV['DB_PORT'] ?? 3306);
-$name = $_ENV['DB_NAME'] ?? 'rx6trpvt26s9ed7v';
-$user = $_ENV['DB_USER'] ?? 'dxrj518624i460gr';
-$pass = $_ENV['DB_PASS'] ?? 'y73zltt43lm3doc1';
+$name = $_ENV['DB_NAME'] ?? 'je3azym5lafcon21';
+$user = $_ENV['DB_USER'] ?? 'xkdta4vbt5drnsty';
+$pass = $_ENV['DB_PASS'] ?? 'z5wu2j3o2dym5bsz';
 
 
 $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
