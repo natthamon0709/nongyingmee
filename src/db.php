@@ -7,7 +7,7 @@ static $pdo;
 if ($pdo) return $pdo;
 
 
-$host = $_ENV['DB_HOST'] ?? '	izm96dhhnwr2ieg0.cbetxkdyhwsb.us-east-1.rds.amazonaws.com';
+$host = $_ENV['DB_HOST'] ?? 'izm96dhhnwr2ieg0.cbetxkdyhwsb.us-east-1.rds.amazonaws.com';
 $port = (int)($_ENV['DB_PORT'] ?? 3306);
 $name = $_ENV['DB_NAME'] ?? 'je3azym5lafcon21';
 $user = $_ENV['DB_USER'] ?? 'xkdta4vbt5drnsty';
