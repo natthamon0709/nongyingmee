@@ -219,7 +219,7 @@ function tabClass($current, $target) {
 <?php
     $positions = settings_list('position');
     $statuses  = settings_list('status');
-    $users     = user_find();
+    $users     = user_list();
     $users_summary = user_performance_summary();  
     // ตรวจว่าเป็นโหมด "แก้ไข"
     $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
