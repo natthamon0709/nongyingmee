@@ -219,8 +219,8 @@ function tabClass($current, $target) {
 <?php
     $positions = settings_list('position');
     $statuses  = settings_list('status');
-    $users     = user_performance_summary();
-    // $users = user_performance_summary();  
+    $users     = user_find();
+    $users_summary = user_performance_summary();  
     // ตรวจว่าเป็นโหมด "แก้ไข"
     $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
     $editUser = $editId ? user_find($editId) : null;
@@ -350,7 +350,7 @@ function tabClass($current, $target) {
       </tr>
     </thead>
     <tbody>
-      <?php foreach ($users as $u): ?>
+      <?php foreach ($users_summary as $u): ?>
       <tr class="border-t hover:bg-blue-50">
         <td class="px-3 py-2"><?= htmlspecialchars($u['name']) ?></td>
         <td class="px-3 py-2"><?= htmlspecialchars($u['email'] ?? '-') ?></td>
@@ -388,7 +388,7 @@ function tabClass($current, $target) {
         </td>
       </tr>
       <?php endforeach; ?>
-      <?php if (empty($users)): ?>
+      <?php if (empty($users_summary)): ?>
       <tr class="border-t">
         <td class="px-3 py-4 text-slate-500 italic" colspan="6">ยังไม่มีผู้ใช้ในระบบ</td>
       </tr>

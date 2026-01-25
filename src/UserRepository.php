@@ -48,47 +48,62 @@ function user_find(int $id): ?array {
         $row = $st->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
 }
+/**
+ * สรุปผลคะแนน + ประสิทธิภาพรายบุคคล (Real-time)
+ * ใช้ submission ล่าสุดต่อ task
+ */
 function user_performance_summary(): array {
-  $pdo = db();
+    $pdo = db();
 
-  $sql = "
-    SELECT 
-      u.id,
-      u.name,
-      u.email,
-      u.rating,
-      p.name AS position,
-      s.name AS status,
+    // ตรวจว่ามี user_id ใน submissions ไหม
+    $hasUserId = column_exists($pdo, 'task_submissions', 'user_id');
 
-      COUNT(t.id) AS total_tasks,
-      SUM(CASE WHEN r.review_status = 'approved' THEN 1 ELSE 0 END) AS approved_tasks,
-      SUM(CASE WHEN r.review_status = 'rework' THEN 1 ELSE 0 END) AS rework_tasks,
-      SUM(CASE WHEN r.review_status = 'waiting' OR r.review_status IS NULL THEN 1 ELSE 0 END) AS waiting_tasks,
-      ROUND(AVG(r.score), 2) AS avg_score
+    // เลือก key join ให้ตรง schema
+    $joinUser = $hasUserId
+        ? 's.user_id = u.id'
+        : 's.sender_name = u.name';
 
-    FROM users u
-    LEFT JOIN positions p ON u.position_id = p.id
-    LEFT JOIN statuses s  ON u.status_id   = s.id
-    LEFT JOIN tasks t ON t.assignee_id = u.id
-    LEFT JOIN submissions sb ON sb.task_id = t.id
-    LEFT JOIN reviews r ON r.submission_id = sb.id
+    $sql = "
+        WITH latest AS (
+            SELECT task_id, MAX(id) AS last_id
+            FROM task_submissions
+            GROUP BY task_id
+        )
+        SELECT
+            u.id,
+            u.name,
+            u.email,
 
-    GROUP BY u.id
-    ORDER BY u.name
-  ";
+            COUNT(s.id) AS total_tasks,
 
-  $stmt = $pdo->query($sql);
-  $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            SUM(CASE WHEN s.review_status = 'approved' THEN 1 ELSE 0 END) AS approved_tasks,
+            SUM(CASE WHEN s.review_status = 'rework' THEN 1 ELSE 0 END) AS rework_tasks,
+            SUM(CASE
+                WHEN s.review_status = 'waiting' OR s.review_status IS NULL
+                THEN 1 ELSE 0 END
+            ) AS waiting_tasks,
 
-  // คำนวณประสิทธิภาพ %
-  foreach ($rows as &$r) {
-    if ($r['total_tasks'] > 0) {
-      $r['performance'] = round(($r['approved_tasks'] / $r['total_tasks']) * 100);
-    } else {
-      $r['performance'] = 0;
+            ROUND(AVG(s.score), 2) AS avg_score
+
+        FROM users u
+        LEFT JOIN task_submissions s ON {$joinUser}
+        LEFT JOIN latest l ON l.last_id = s.id
+
+        GROUP BY u.id
+        ORDER BY u.name
+    ";
+
+    $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+
+    // คำนวณ performance %
+    foreach ($rows as &$r) {
+        $r['performance'] = $r['total_tasks'] > 0
+            ? round(($r['approved_tasks'] / $r['total_tasks']) * 100)
+            : 0;
     }
-  }
 
-  return $rows;
+    return $rows;
 }
+
+
 
