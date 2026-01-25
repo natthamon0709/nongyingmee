@@ -551,7 +551,7 @@ function tabClass($current, $target) {
               onsubmit="return confirm('⚠️ ต้องการลบงานนี้ทั้งหมดหรือไม่?\nการส่งงานและไฟล์แนบจะถูกลบด้วย')"
             >
               <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
-              <input type="hidden" name="task_id" value="<?= (int)$r['task_id'] ?>">
+              <input type="hidden" name="task_id" value="<?= (int)$r['id'] ?>">
 
               <button
                 type="submit"
