@@ -77,6 +77,13 @@ function tabClass($current, $target) {
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 0l4 4M4 5l4-4M10 19h10M10 13h10M10 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           สรุปผล
         </a>
+        <a href="?tab=dashboard" class="<?= tabClass($tab,'dashboard') ?>">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <path d="M3 13h8V3H3v10Zm10 8h8V11h-8v10ZM3 21h8v-6H3v6Zm10-18v6h8V3h-8Z"
+                  stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          Dashboard บุคคล
+        </a>
       </nav>
     </div>
   </div>
@@ -954,10 +961,91 @@ function tabClass($current, $target) {
     <?php endif; ?>
   </div>
 </div>
+<?php elseif ($tab === 'dashboard'): ?>
+<?php
+  $dashUsers = user_performance_summary();
+?>
+
+<h2 class="text-lg font-semibold mb-5 flex items-center gap-2">
+  📊 Dashboard ประสิทธิภาพรายบุคคล
+</h2>
+
+<!-- GRID DASHBOARD -->
+<div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+
+<?php foreach ($dashUsers as $u): ?>
+  <?php
+    $perf = (int)$u['performance'];
+    $barColor =
+      $perf >= 80 ? 'bg-emerald-500' :
+      ($perf >= 50 ? 'bg-amber-400' : 'bg-rose-500');
+  ?>
+
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 hover:shadow-md transition">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <div class="font-semibold text-slate-800">
+          <?= htmlspecialchars($u['name']) ?>
+        </div>
+        <div class="text-xs text-slate-500">
+          <?= htmlspecialchars($u['position'] ?? '-') ?>
+        </div>
+      </div>
+      <div class="text-sm">
+        <?= str_repeat('⭐', (int)$u['rating']) ?>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="mb-3">
+      <div class="flex justify-between text-xs text-slate-600 mb-1">
+        <span>ประสิทธิภาพ</span>
+        <span><?= $perf ?>%</span>
+      </div>
+      <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div class="h-2 <?= $barColor ?>" style="width: <?= $perf ?>%"></div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-4 gap-2 text-xs text-center">
+      <div class="rounded-xl bg-slate-50 p-2">
+        📌<div class="font-semibold"><?= $u['total_tasks'] ?></div>
+        <div class="text-slate-500">ทั้งหมด</div>
+      </div>
+      <div class="rounded-xl bg-emerald-50 p-2">
+        ✅<div class="font-semibold text-emerald-700"><?= $u['approved_tasks'] ?></div>
+        <div class="text-emerald-600">ผ่าน</div>
+      </div>
+      <div class="rounded-xl bg-amber-50 p-2">
+        ⏳<div class="font-semibold text-amber-700"><?= $u['waiting_tasks'] ?></div>
+        <div class="text-amber-600">รอ</div>
+      </div>
+      <div class="rounded-xl bg-rose-50 p-2">
+        🔁<div class="font-semibold text-rose-700"><?= $u['rework_tasks'] ?></div>
+        <div class="text-rose-600">แก้ไข</div>
+      </div>
+    </div>
+
+  </section>
+<?php endforeach; ?>
+
+<?php if (empty($dashUsers)): ?>
+  <div class="col-span-full text-slate-500 italic">
+    ยังไม่มีข้อมูลประสิทธิภาพผู้ใช้
+  </div>
+<?php endif; ?>
+
+</div>
+
     <?php endif; ?>
     </div>
   </div>
 </div>
+
+
 
 <script>
 function togglePassword() {
