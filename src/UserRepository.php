@@ -73,7 +73,7 @@ function user_performance_summary(): array {
             u.id,
             u.name,
             u.email,
-            p.name AS position, s.name AS status,
+            p.name AS position, e.name AS status,
             u.rating, u.role,
 
             COUNT(s.id) AS total_tasks,
@@ -91,7 +91,7 @@ function user_performance_summary(): array {
         LEFT JOIN task_submissions s ON {$joinUser}
         LEFT JOIN latest l ON l.last_id = s.id
         LEFT JOIN positions p ON u.position_id = p.id
-        LEFT JOIN employment_statuses s ON u.status_id = s.id
+        LEFT JOIN employment_statuses e ON u.status_id = e.id
 
         GROUP BY u.id
         ORDER BY u.name
