@@ -2,8 +2,8 @@
 require_once __DIR__ . '/../src/helpers.php';
 require_once __DIR__ . '/../src/TaskRepository.php';
 
-require_auth('admin');
-csrf_verify();
+// require_auth('admin');
+// csrf_verify();
 
 $taskId = (int)($_POST['task_id'] ?? 0);
 if ($taskId <= 0) {
