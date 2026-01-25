@@ -306,42 +306,14 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
         </div>
 
         <!-- NEW: เอกสาร/ไฟล์แนบของงาน (แสดงเป็นชิปลิงก์แบบ All/Review) -->
-        <!-- <?php if (!empty($taskFiles)): ?>
+        <?php if (!empty($taskFiles)): ?>
           <div class="mt-4">
             <div class="text-sm text-slate-700 mb-2">เอกสาร/ไฟล์แนบของงาน</div>
             <div class="flex flex-wrap gap-2">
               <?php foreach ($taskFiles as $f) echo $renderFileChip($f); ?>
             </div>
           </div>
-        <?php endif; ?> -->
-         <?php if (!empty($latest['files'])): ?>
-              <div class="mt-3 text-sm">
-                <div class="text-slate-700 mb-1">เอกสาร/ไฟล์แนบของงาน</div>
-
-                <div class="flex flex-wrap gap-3">
-                  <?php foreach ($latest['files'] as $f): ?>
-                    <?php
-                      $url  = htmlspecialchars($f['path']);
-                      $name = htmlspecialchars($f['name']);
-                      $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                      $isImg = in_array($ext, ['jpg','jpeg','png','gif','webp']);
-                    ?>
-
-                    <?php if ($isImg): ?>
-                      <a href="<?= $url ?>" target="_blank"
-                        class="rounded-lg border br-dash p-1 hover:border-emerald-300">
-                        <img src="<?= $url ?>" class="w-28 h-20 object-cover rounded-md" />
-                      </a>
-                    <?php else: ?>
-                      <a href="<?= $url ?>" target="_blank"
-                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border hover:bg-slate-50">
-                        📎 <?= $name ?>
-                      </a>
-                    <?php endif; ?>
-                  <?php endforeach; ?>
-                </div>
-              </div>
-            <?php endif; ?>
+        <?php endif; ?>
 
         <?php if ($isCurrent && $latest): ?>
           <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
@@ -360,28 +332,12 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
             <?php endif; ?>
             <?php if (!empty($latest['files'])): ?>
               <div class="mt-3 text-sm">
-                <div class="text-slate-700 mb-1">ไฟล์ที่แนบ:</div>
-
+                <div class="text-slate-700 mb-1">ไฟล์/รูปที่แนบไว้:</div>
                 <div class="flex flex-wrap gap-3">
-                  <?php foreach ($latest['files'] as $f): ?>
-                    <?php
-                      $url  = htmlspecialchars($f['path']);
-                      $name = htmlspecialchars($f['name']);
-                      $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                      $isImg = in_array($ext, ['jpg','jpeg','png','gif','webp']);
-                    ?>
-
-                    <?php if ($isImg): ?>
-                      <a href="<?= $url ?>" target="_blank"
-                        class="rounded-lg border br-dash p-1 hover:border-emerald-300">
-                        <img src="<?= $url ?>" class="w-28 h-20 object-cover rounded-md" />
-                      </a>
-                    <?php else: ?>
-                      <a href="<?= $url ?>" target="_blank"
-                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border hover:bg-slate-50">
-                        📎 <?= $name ?>
-                      </a>
-                    <?php endif; ?>
+                  <?php foreach ($latest['files'] as $fp): ?>
+                    <a href="<?= htmlspecialchars($fp) ?>" target="_blank" rel="noopener" class="rounded-lg border br-dash p-1 hover:border-emerald-300">
+                      <img src="<?= htmlspecialchars($fp) ?>" class="w-28 h-20 object-cover rounded-md" />
+                    </a>
                   <?php endforeach; ?>
                 </div>
               </div>
