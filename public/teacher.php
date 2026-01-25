@@ -123,9 +123,9 @@ if ($task && tbl_exists($pdo, 'task_submissions')) {
   $sql .= " ORDER BY id DESC LIMIT 1";
   $st = $pdo->prepare($sql); $st->execute($p);
   $latest = $st->fetch(PDO::FETCH_ASSOC);
-  if ($latest && array_key_exists('files',$latest) && $latest['files']) {
-    $a = json_decode($latest['files'], true);
-    $latest['files'] = is_array($a) ? $a : [];
+  if ($latest && !empty($latest['files'])) {
+      $files = json_decode($latest['files'], true);
+      $latest['files'] = is_array($files) ? $files : [];
   }
 }
 
@@ -141,21 +141,58 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
     $linkUrl = trim($_POST['link_url'] ?? '');
 
     // (รองรับอัปโหลดไฟล์; ถ้าอยากเก็บเฉพาะลิงก์ สามารถซ่อนไว้ได้)
-    $fileUrls = [];
+    // $fileUrls = [];
+    // if (!empty($_FILES['files']) && is_array($_FILES['files']['name'])) {
+    //   $baseDir = __DIR__ . '/../uploads/submissions';
+    //   if (!is_dir($baseDir)) @mkdir($baseDir, 0777, true);
+    //   foreach ($_FILES['files']['name'] as $i=>$name) {
+    //     $err = $_FILES['files']['error'][$i] ?? UPLOAD_ERR_NO_FILE;
+    //     if ($err !== UPLOAD_ERR_OK) continue;
+    //     $tmp = $_FILES['files']['tmp_name'][$i];
+    //     $ext = pathinfo($name, PATHINFO_EXTENSION);
+    //     $fn  = 'sub_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . ($ext ? ".{$ext}" : '');
+    //     if (move_uploaded_file($tmp, $baseDir.'/'.$fn)) {
+    //       $fileUrls[] = 'uploads/submissions/'.$fn;
+    //     }
+    //   }
+    // }
+    $uploadedFiles = [];
+
     if (!empty($_FILES['files']) && is_array($_FILES['files']['name'])) {
-      $baseDir = __DIR__ . '/../uploads/submissions';
-      if (!is_dir($baseDir)) @mkdir($baseDir, 0777, true);
-      foreach ($_FILES['files']['name'] as $i=>$name) {
-        $err = $_FILES['files']['error'][$i] ?? UPLOAD_ERR_NO_FILE;
-        if ($err !== UPLOAD_ERR_OK) continue;
-        $tmp = $_FILES['files']['tmp_name'][$i];
-        $ext = pathinfo($name, PATHINFO_EXTENSION);
-        $fn  = 'sub_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . ($ext ? ".{$ext}" : '');
-        if (move_uploaded_file($tmp, $baseDir.'/'.$fn)) {
-          $fileUrls[] = 'uploads/submissions/'.$fn;
+
+        $ym = date('Y/m');
+        $baseDir = __DIR__ . "/../uploads/submissions/$ym";
+
+        if (!is_dir($baseDir)) {
+            mkdir($baseDir, 0777, true);
         }
-      }
+
+        foreach ($_FILES['files']['name'] as $i => $originalName) {
+
+            if ($_FILES['files']['error'][$i] !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $tmp = $_FILES['files']['tmp_name'][$i];
+            $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+            $safeName = preg_replace('/[^a-zA-Z0-9ก-๙._-]/u', '_', $originalName);
+
+            $filename = 'sub_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . ($ext ? ".$ext" : '');
+            $fullPath = "$baseDir/$filename";
+            $dbPath   = "uploads/submissions/$ym/$filename";
+
+            if (move_uploaded_file($tmp, $fullPath)) {
+                $uploadedFiles[] = [
+                    'path' => $dbPath,
+                    'name' => $safeName,
+                    'type' => $_FILES['files']['type'][$i],
+                    'size' => $_FILES['files']['size'][$i],
+                ];
+            }
+        }
     }
+
 
     if (!tbl_exists($pdo,'task_submissions')) throw new RuntimeException('ตาราง task_submissions ไม่มีในฐานข้อมูล');
 
@@ -165,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
     if (col_exists($pdo,'task_submissions','sender_name'))   { $cols[]='sender_name';   $vals[]='?';         $prm[]=$user['name'] ?? null; }
     if (col_exists($pdo,'task_submissions','content'))       { $cols[]='content';       $vals[]='?';         $prm[]=$content ?: null; }
     if (col_exists($pdo,'task_submissions','link_url'))      { $cols[]='link_url';      $vals[]='?';         $prm[]=$linkUrl ?: null; }
-    if (col_exists($pdo,'task_submissions','files'))         { $cols[]='files';         $vals[]='?';         $prm[]=json_encode($fileUrls); }
+    if (col_exists($pdo,'task_submissions','files'))         { $cols[] = 'files';       $vals[] = '?';       $prm[]  = json_encode($uploadedFiles, JSON_UNESCAPED_UNICODE);}
     if (col_exists($pdo,'task_submissions','review_status')) { $cols[]='review_status'; $vals[]='?';         $prm[]='waiting'; }
     if (col_exists($pdo,'task_submissions','sent_at'))       { $cols[]='sent_at';       $vals[]='NOW()'; }
 
@@ -295,12 +332,28 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
             <?php endif; ?>
             <?php if (!empty($latest['files'])): ?>
               <div class="mt-3 text-sm">
-                <div class="text-slate-700 mb-1">ไฟล์/รูปที่แนบไว้:</div>
+                <div class="text-slate-700 mb-1">ไฟล์ที่แนบ:</div>
+
                 <div class="flex flex-wrap gap-3">
-                  <?php foreach ($latest['files'] as $fp): ?>
-                    <a href="<?= htmlspecialchars($fp) ?>" target="_blank" rel="noopener" class="rounded-lg border br-dash p-1 hover:border-emerald-300">
-                      <img src="<?= htmlspecialchars($fp) ?>" class="w-28 h-20 object-cover rounded-md" />
-                    </a>
+                  <?php foreach ($latest['files'] as $f): ?>
+                    <?php
+                      $url  = htmlspecialchars($f['path']);
+                      $name = htmlspecialchars($f['name']);
+                      $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                      $isImg = in_array($ext, ['jpg','jpeg','png','gif','webp']);
+                    ?>
+
+                    <?php if ($isImg): ?>
+                      <a href="<?= $url ?>" target="_blank"
+                        class="rounded-lg border br-dash p-1 hover:border-emerald-300">
+                        <img src="<?= $url ?>" class="w-28 h-20 object-cover rounded-md" />
+                      </a>
+                    <?php else: ?>
+                      <a href="<?= $url ?>" target="_blank"
+                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border hover:bg-slate-50">
+                        📎 <?= $name ?>
+                      </a>
+                    <?php endif; ?>
                   <?php endforeach; ?>
                 </div>
               </div>
