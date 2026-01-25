@@ -356,6 +356,11 @@ function tabClass($current, $target) {
         <td class="px-3 py-2"><?= htmlspecialchars($u['status'] ?? '-') ?></td>
         <td class="px-3 py-2"><?= str_repeat('⭐', (int)$u['rating']) ?></td>
         <td class="px-3 py-2">
+          <button 
+            class="text-emerald-600 hover:text-emerald-800"
+            onclick="openReviewModal(<?= (int)$u['id'] ?>)">
+            📊
+          </button>
           <a href="admin.php?tab=users&id=<?= (int)$u['id'] ?>" class="text-blue-600 hover:text-blue-800 mr-2" title="แก้ไข">✎</a>
           <form action="user_delete.php" method="post" class="inline" onsubmit="return confirm('ลบผู้ใช้นี้หรือไม่?')">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
@@ -645,6 +650,43 @@ function tabClass($current, $target) {
   </form>
 </dialog>
 
+<!-- Review Modal -->
+<div id="reviewModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
+    
+    <h3 class="text-lg font-semibold text-blue-800 mb-4">
+      📊 สรุปผลการประเมินรายบุคคล
+    </h3>
+
+    <div id="reviewLoading" class="text-center py-6 text-slate-500">
+      กำลังโหลดข้อมูล...
+    </div>
+
+    <div id="reviewContent" class="hidden space-y-4">
+      <div class="flex justify-between">
+        <span>คะแนนรวม</span>
+        <span id="totalScore" class="font-semibold"></span>
+      </div>
+
+      <div class="flex justify-between">
+        <span>ประสิทธิภาพ</span>
+        <span id="efficiency" class="font-semibold"></span>
+      </div>
+
+      <div>
+        <p class="font-medium mb-1">สรุปผล</p>
+        <p id="summaryText" class="text-sm text-slate-600"></p>
+      </div>
+    </div>
+
+    <button 
+      onclick="closeReviewModal()"
+      class="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
+      ✕
+    </button>
+  </div>
+</div>
+
 <script>
   const dlg = document.getElementById('reviewModal');
   const score = document.getElementById('rv_score');
@@ -853,7 +895,7 @@ function tabClass($current, $target) {
 <?php endif; ?>
 </div>
 
-    <?php elseif ($tab === 'summary'): ?>
+<?php elseif ($tab === 'summary'): ?>
 <?php
   $sum    = task_summary_overall();
   $byDept = task_summary_by_department();
@@ -940,6 +982,32 @@ function tabClass($current, $target) {
 function togglePassword() {
   const f = document.getElementById('passwordField');
   f.type = f.type === 'password' ? 'text' : 'password';
+}
+
+function openReviewModal(userId) {
+  const modal = document.getElementById('reviewModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  document.getElementById('reviewLoading').classList.remove('hidden');
+  document.getElementById('reviewContent').classList.add('hidden');
+
+  fetch(`review_summary.php?user_id=${userId}`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('totalScore').textContent = data.total_score + ' คะแนน';
+      document.getElementById('efficiency').textContent = data.efficiency + '%';
+      document.getElementById('summaryText').textContent = data.summary;
+
+      document.getElementById('reviewLoading').classList.add('hidden');
+      document.getElementById('reviewContent').classList.remove('hidden');
+    });
+}
+
+function closeReviewModal() {
+  const modal = document.getElementById('reviewModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
 }
 </script>
 <?php require_once __DIR__ . '/../templates/footer.php'; ?>
