@@ -447,7 +447,7 @@ function task_delete_full(int $taskId): void {
   $db = db();
 
   // ลบการส่งงาน
-  $stmt = $db->prepare("DELETE FROM submissions WHERE task_id = ?");
+  $stmt = $db->prepare("DELETE FROM task_submissions WHERE task_id = ?");
   $stmt->execute([$taskId]);
 
   // ลบงานหลัก

@@ -541,18 +541,26 @@ function tabClass($current, $target) {
             data-review="<?= htmlspecialchars($revKey, ENT_QUOTES) ?>"
             data-score="<?= (int)($r['score'] ?? 0) ?>"
             data-comment="<?= htmlspecialchars($r['reviewer_comment'] ?? '', ENT_QUOTES) ?>"
-          >🗂 ตรวจงาน</button>
-            <form action="task_delete.php"
-                  method="post"
-                  class="inline"
-                  onsubmit="return confirm('⚠️ ต้องการลบงานนี้ทั้งหมดหรือไม่?\nการส่งงานและไฟล์แนบจะถูกลบด้วย')">
+          >
+            🗂 ตรวจงาน
+          </button>
+          <form
+              action="task_delete.php"
+              method="post"
+              class="inline ml-2"
+              onsubmit="return confirm('⚠️ ต้องการลบงานนี้ทั้งหมดหรือไม่?\nการส่งงานและไฟล์แนบจะถูกลบด้วย')"
+            >
+              <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
               <input type="hidden" name="task_id" value="<?= (int)$r['task_id'] ?>">
+
               <button
                 type="submit"
-                class="inline-flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-sm ml-2">
-                🗑 ลบงาน
-              </button>
-            </form>
+                class="text-rose-500 hover:text-rose-700 text-sm"
+                title="ลบงาน"
+              >
+              ลบ
+            </button>
+          </form>
         </div>
       </div>
     <?php else: ?>

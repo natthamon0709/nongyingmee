@@ -2,8 +2,8 @@
 require_once __DIR__ . '/../src/helpers.php';
 require_once __DIR__ . '/../src/TaskRepository.php';
 
-// require_auth('admin');
-// csrf_verify();
+require_auth('admin');      // ✅ ลบได้เฉพาะ admin
+csrf_verify();              // ✅ ตรวจ CSRF token
 
 $taskId = (int)($_POST['task_id'] ?? 0);
 if ($taskId <= 0) {
@@ -12,9 +12,9 @@ if ($taskId <= 0) {
 }
 
 /*
-  ควรลบตามลำดับ:
+  ลำดับการลบที่ถูกต้อง:
   1) submissions
-  2) attachments (ถ้ามี)
+  2) attachments
   3) tasks
 */
 task_delete_full($taskId);
