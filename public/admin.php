@@ -542,12 +542,10 @@ function tabClass($current, $target) {
             data-score="<?= (int)($r['score'] ?? 0) ?>"
             data-comment="<?= htmlspecialchars($r['reviewer_comment'] ?? '', ENT_QUOTES) ?>"
           >🗂 ตรวจงาน</button>
-          <!-- <?php if (auth_user()['role'] === 'admin'): ?> -->
             <form action="task_delete.php"
                   method="post"
                   class="inline"
                   onsubmit="return confirm('⚠️ ต้องการลบงานนี้ทั้งหมดหรือไม่?\nการส่งงานและไฟล์แนบจะถูกลบด้วย')">
-              <!-- <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>"> -->
               <input type="hidden" name="task_id" value="<?= (int)$r['task_id'] ?>">
               <button
                 type="submit"
@@ -555,7 +553,6 @@ function tabClass($current, $target) {
                 🗑 ลบงาน
               </button>
             </form>
-          <!-- <?php endif; ?> -->
         </div>
       </div>
     <?php else: ?>
