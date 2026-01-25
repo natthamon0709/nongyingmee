@@ -336,13 +336,38 @@ if (isset($_GET['ok'])) $flashOk = 'ส่งงานเรียบร้อ�
               <textarea name="content" rows="3" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300" placeholder="อธิบายรายละเอียดการส่งงาน..."><?= isset($latest['content']) ? htmlspecialchars($latest['content']) : '' ?></textarea>
             </div>
 
-            <div class="grid sm:grid-cols-2 gap-4">
+            <!-- <div class="grid sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm text-slate-700 mb-1">ลิงก์ไฟล์ (Google Drive/YouTube/ฯลฯ)</label>
                 <input type="url" name="link_url" value="<?= isset($latest['link_url']) ? htmlspecialchars($latest['link_url']) : '' ?>" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-300" placeholder="https://..." />
                 <div class="text-xs text-slate-500 mt-1">หากแนบลิงก์แล้วอาจไม่ต้องอัปโหลดไฟล์ซ้ำ</div>
               </div>
+            </div> -->
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-slate-700 mb-1">
+                  แนบไฟล์งาน
+                </label>
+
+                <input
+                  type="file"
+                  name="files[]"
+                  multiple
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.jpg,.jpeg,.png"
+                  class="w-full rounded-xl border border-slate-300 px-3 py-2.5
+                        file:mr-4 file:rounded-lg file:border-0
+                        file:bg-blue-50 file:px-4 file:py-2
+                        file:text-sm file:font-semibold
+                        file:text-blue-700 hover:file:bg-blue-100
+                        focus:ring-2 focus:ring-blue-300"
+                />
+
+                <div class="text-xs text-slate-500 mt-1">
+                  รองรับหลายไฟล์ (PDF, Word, PowerPoint, ZIP, รูปภาพ)
+                </div>
+              </div>
             </div>
+
 
             <div class="text-sm text-slate-600">
               แจ้งเตือน: <span class="chip bg-slate-200 text-slate-700"><?= htmlspecialchars($t['assignee_name'] ?? 'ครูผู้รับผิดชอบหลัก') ?></span>
