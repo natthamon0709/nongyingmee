@@ -219,8 +219,8 @@ function tabClass($current, $target) {
 <?php
     $positions = settings_list('position');
     $statuses  = settings_list('status');
-    $users     = user_list();
-
+    $users     = user_performance_summary();
+    // $users = user_performance_summary();  
     // ตรวจว่าเป็นโหมด "แก้ไข"
     $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
     $editUser = $editId ? user_find($editId) : null;
@@ -344,6 +344,8 @@ function tabClass($current, $target) {
         <th class="px-3 py-2">ตำแหน่ง</th>
         <th class="px-3 py-2">สถานะ</th>
         <th class="px-3 py-2">คะแนน</th>
+        <th class="px-3 py-2">ผลงาน</th>
+        <th class="px-3 py-2">ประสิทธิภาพ</th>
         <th class="px-3 py-2">จัดการ</th>
       </tr>
     </thead>
@@ -355,12 +357,28 @@ function tabClass($current, $target) {
         <td class="px-3 py-2"><?= htmlspecialchars($u['position'] ?? '-') ?></td>
         <td class="px-3 py-2"><?= htmlspecialchars($u['status'] ?? '-') ?></td>
         <td class="px-3 py-2"><?= str_repeat('⭐', (int)$u['rating']) ?></td>
+        <td class="px-3 py-2 text-xs">
+          <div>📌 ทั้งหมด: <?= $u['total_tasks'] ?></div>
+          <div class="text-emerald-600">✅ ผ่าน: <?= $u['approved_tasks'] ?></div>
+          <div class="text-rose-600">🔁 แก้ไข: <?= $u['rework_tasks'] ?></div>
+          <div class="text-amber-600">⏳ รอ: <?= $u['waiting_tasks'] ?></div>
+        </td>
+
         <td class="px-3 py-2">
-          <button 
-            class="text-emerald-600 hover:text-emerald-800"
-            onclick="openReviewModal(<?= (int)$u['id'] ?>)">
-            📊
-          </button>
+          <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+            <div 
+              class="h-2 rounded-full
+                <?= $u['performance'] >= 80 ? 'bg-emerald-500' : 
+                    ($u['performance'] >= 50 ? 'bg-amber-400' : 'bg-rose-500') ?>"
+              style="width: <?= $u['performance'] ?>%">
+            </div>
+          </div>
+          <div class="text-xs text-slate-600 mt-1">
+            <?= $u['performance'] ?>% | ⭐ <?= $u['avg_score'] ?: '-' ?>
+          </div>
+        </td>
+
+        <td class="px-3 py-2">
           <a href="admin.php?tab=users&id=<?= (int)$u['id'] ?>" class="text-blue-600 hover:text-blue-800 mr-2" title="แก้ไข">✎</a>
           <form action="user_delete.php" method="post" class="inline" onsubmit="return confirm('ลบผู้ใช้นี้หรือไม่?')">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
@@ -649,43 +667,6 @@ function tabClass($current, $target) {
     </div>
   </form>
 </dialog>
-
-<!-- Review Modal -->
-<div id="reviewModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
-    
-    <h3 class="text-lg font-semibold text-blue-800 mb-4">
-      📊 สรุปผลการประเมินรายบุคคล
-    </h3>
-
-    <div id="reviewLoading" class="text-center py-6 text-slate-500">
-      กำลังโหลดข้อมูล...
-    </div>
-
-    <div id="reviewContent" class="hidden space-y-4">
-      <div class="flex justify-between">
-        <span>คะแนนรวม</span>
-        <span id="totalScore" class="font-semibold"></span>
-      </div>
-
-      <div class="flex justify-between">
-        <span>ประสิทธิภาพ</span>
-        <span id="efficiency" class="font-semibold"></span>
-      </div>
-
-      <div>
-        <p class="font-medium mb-1">สรุปผล</p>
-        <p id="summaryText" class="text-sm text-slate-600"></p>
-      </div>
-    </div>
-
-    <button 
-      onclick="closeReviewModal()"
-      class="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
-      ✕
-    </button>
-  </div>
-</div>
 
 <script>
   const dlg = document.getElementById('reviewModal');
@@ -982,32 +963,6 @@ function tabClass($current, $target) {
 function togglePassword() {
   const f = document.getElementById('passwordField');
   f.type = f.type === 'password' ? 'text' : 'password';
-}
-
-function openReviewModal(userId) {
-  const modal = document.getElementById('reviewModal');
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-
-  document.getElementById('reviewLoading').classList.remove('hidden');
-  document.getElementById('reviewContent').classList.add('hidden');
-
-  fetch(`review_summary.php?user_id=${userId}`)
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById('totalScore').textContent = data.total_score + ' คะแนน';
-      document.getElementById('efficiency').textContent = data.efficiency + '%';
-      document.getElementById('summaryText').textContent = data.summary;
-
-      document.getElementById('reviewLoading').classList.add('hidden');
-      document.getElementById('reviewContent').classList.remove('hidden');
-    });
-}
-
-function closeReviewModal() {
-  const modal = document.getElementById('reviewModal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
 }
 </script>
 <?php require_once __DIR__ . '/../templates/footer.php'; ?>
