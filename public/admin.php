@@ -543,6 +543,20 @@ function tabClass($current, $target) {
             data-comment="<?= htmlspecialchars($r['reviewer_comment'] ?? '', ENT_QUOTES) ?>"
           >🗂 ตรวจงาน</button>
         </div>
+        <?php if (auth_user()['role'] === 'admin'): ?>
+          <form action="task_delete.php"
+                method="post"
+                class="inline"
+                onsubmit="return confirm('⚠️ ต้องการลบงานนี้ทั้งหมดหรือไม่?\nการส่งงานและไฟล์แนบจะถูกลบด้วย')">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
+            <input type="hidden" name="task_id" value="<?= (int)$r['task_id'] ?>">
+            <button
+              type="submit"
+              class="inline-flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-sm ml-2">
+              🗑 ลบงาน
+            </button>
+          </form>
+        <?php endif; ?>
       </div>
     <?php else: ?>
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
@@ -800,7 +814,7 @@ function tabClass($current, $target) {
           </div>
         <?php endif; ?>
 
-        <div class="mt-3 text-right">
+        <!-- <div class="mt-3 text-right">
           <button
             type="button"
             class="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm open-review"
@@ -816,7 +830,7 @@ function tabClass($current, $target) {
             data-score="<?= (int)($r['score'] ?? 0) ?>"
             data-comment="<?= htmlspecialchars($r['reviewer_comment'] ?? '', ENT_QUOTES) ?>"
           >🗂 ตรวจงาน</button>
-        </div>
+        </div> -->
       </div>
     <?php else: ?>
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-600">
@@ -918,9 +932,9 @@ function tabClass($current, $target) {
 </div>
 
 <script>
-function togglePassword(){
-  const input = document.getElementById('passwordField');
-  input.type = (input.type === 'password') ? 'text' : 'password';
+function togglePassword() {
+  const f = document.getElementById('passwordField');
+  f.type = f.type === 'password' ? 'text' : 'password';
 }
 </script>
 <?php require_once __DIR__ . '/../templates/footer.php'; ?>

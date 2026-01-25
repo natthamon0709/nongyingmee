@@ -442,3 +442,15 @@ function tasks_list2(?int $department_id = null, ?string $status = null): array 
 
     return $rows;
 }
+
+function task_delete_full(int $taskId): void {
+  $db = db();
+
+  // ลบการส่งงาน
+  $stmt = $db->prepare("DELETE FROM submissions WHERE task_id = ?");
+  $stmt->execute([$taskId]);
+
+  // ลบงานหลัก
+  $stmt = $db->prepare("DELETE FROM tasks WHERE id = ?");
+  $stmt->execute([$taskId]);
+}
