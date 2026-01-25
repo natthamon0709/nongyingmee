@@ -351,8 +351,8 @@ function tabClass($current, $target) {
         <th class="px-3 py-2">ตำแหน่ง</th>
         <th class="px-3 py-2">สถานะ</th>
         <th class="px-3 py-2">คะแนน</th>
-        <th class="px-3 py-2">ผลงาน</th>
-        <th class="px-3 py-2">ประสิทธิภาพ</th>
+        <!-- <th class="px-3 py-2">ผลงาน</th>
+        <th class="px-3 py-2">ประสิทธิภาพ</th> -->
         <th class="px-3 py-2">จัดการ</th>
       </tr>
     </thead>
@@ -364,7 +364,7 @@ function tabClass($current, $target) {
         <td class="px-3 py-2"><?= htmlspecialchars($u['position'] ?? '-') ?></td>
         <td class="px-3 py-2"><?= htmlspecialchars($u['status'] ?? '-') ?></td>
         <td class="px-3 py-2"><?= str_repeat('⭐', (int)$u['rating']) ?></td>
-        <td class="px-3 py-2 text-xs">
+        <!-- <td class="px-3 py-2 text-xs">
           <div>📌 ทั้งหมด: <?= $u['total_tasks'] ?></div>
           <div class="text-emerald-600">✅ ผ่าน: <?= $u['approved_tasks'] ?></div>
           <div class="text-rose-600">🔁 แก้ไข: <?= $u['rework_tasks'] ?></div>
@@ -383,7 +383,7 @@ function tabClass($current, $target) {
           <div class="text-xs text-slate-600 mt-1">
             <?= $u['performance'] ?>% | ⭐ <?= $u['avg_score'] ?: '-' ?>
           </div>
-        </td>
+        </td> -->
 
         <td class="px-3 py-2">
           <a href="admin.php?tab=users&id=<?= (int)$u['id'] ?>" class="text-blue-600 hover:text-blue-800 mr-2" title="แก้ไข">✎</a>

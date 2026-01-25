@@ -80,10 +80,14 @@ function user_performance_summary(): array {
 
             SUM(CASE WHEN s.review_status = 'approved' THEN 1 ELSE 0 END) AS approved_tasks,
             SUM(CASE WHEN s.review_status = 'rework' THEN 1 ELSE 0 END) AS rework_tasks,
-            SUM(CASE
-                WHEN s.review_status = 'waiting' OR s.review_status IS NULL
-                THEN 1 ELSE 0 END
-            ) AS waiting_tasks,
+            SUM(
+								CASE
+										WHEN s.id IS NOT NULL
+										 AND (s.review_status = 'waiting' OR s.review_status IS NULL)
+										THEN 1
+										ELSE 0
+								END
+						) AS waiting_tasks,
 
             ROUND(AVG(s.score), 2) AS avg_score
 
