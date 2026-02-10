@@ -1,22 +1,4 @@
-├─ public/
-│ ├─ index.php # หน้า Login (Tailwind CDN)
-│ ├─ login.php # ตัวประมวลผล Login (POST)
-│ ├─ logout.php # ออกจากระบบ
-│ ├─ dashboard.php # หน้าหลังบ้าน (ตัวอย่าง role-based)
-│ └─ assets/
-│ └─ logo-school.svg # โลโก้ รร. (ตัวอย่าง, ใส่ไฟล์จริงเอง)
-├─ src/
-│ ├─ config.php # โหลด .env และตั้งค่าคงที่
-│ ├─ db.php # สร้าง PDO เชื่อม MySQL
-│ ├─ auth.php # ฟังก์ชันยืนยันตัว และ RBAC
-│ ├─ helpers.php # util: session, guard, csrf, redirect
-│ └─ TeacherRepository.php# ดึงรายชื่อครูสำหรับ dropdown
-├─ templates/
-│ ├─ header.php # ส่วนหัว html (สามารถใส่ nav ได้ภายหลัง)
-│ └─ footer.php
-├─ .env.example # ตัวอย่าง ENV
-├─ database.sql # สร้างตาราง + seed ขั้นต้น
-└─ README.md # วิธีติดตั้งและใช้งาน
+
 ```
 admin = Admin@12345
 เจ้าหน้าที่แจ้งงาน = Report@12345
